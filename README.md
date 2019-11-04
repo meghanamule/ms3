@@ -41,4 +41,4 @@ Step 5: Clone this repo
 
 Step 6: Import the project into studio 
 
-Step 7: Use the postman collection to run the project.
+Step 7: Use the postman collection to run the project available in the root of repo.
