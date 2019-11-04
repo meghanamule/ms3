@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:dw="http://www.mulesoft.org/schema/mule/ee/dw" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:tracking="http://www.mulesoft.org/schema/mule/ee/tracking" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/mule/ee/tracking/current/mule-tracking-ee.xsd
+http://www.mulesoft.org/schema/mule/ee/dw http://www.mulesoft.org/schema/mule/ee/dw/current/dw.xsd">
+    <db:mysql-config name="MySQL_Configuration" host="localhost" port="3306" user="root" password="admin" database="ms3" doc:name="MySQL Configuration"/>
+    <sub-flow name="uniqueIdentifier">
+        <set-variable variableName="firstName" value="#[message.inboundProperties.'http.query.params'.firstName]" doc:name="FirstName"/>
+        <set-variable variableName="lastName" value="#[message.inboundProperties.'http.query.params'.lastName]" doc:name="LastName"/>
+        <set-variable variableName="dob" value="#[message.inboundProperties.'http.query.params'.dob]" doc:name="DOB"/>
+        <dw:transform-message doc:name="UniqueId">
+            <dw:set-variable variableName="uid"><![CDATA[%dw 1.0
+%output application/java
+---
+flowVars.firstName ++ flowVars.lastName ++ flowVars.dob]]></dw:set-variable>
+        </dw:transform-message>
+    </sub-flow>
+    <flow name="getdata">
+        <flow-ref name="uniqueIdentifier" doc:name="UniqueId_flow"/>
+        <scatter-gather doc:name="Scatter-Gather">
+            <db:select config-ref="MySQL_Configuration" doc:name="get_identification">
+                <db:parameterized-query><![CDATA[select FirstName, LastName, DOB, Gender, Title from identification WHERE id = #[flowVars.uid];]]></db:parameterized-query>
+            </db:select>
+            <db:select config-ref="MySQL_Configuration" doc:name="get_communication">
+                <db:parameterized-query><![CDATA[select type, value, preferred from communication WHERE id = #[flowVars.uid];]]></db:parameterized-query>
+            </db:select>
+            <db:select config-ref="MySQL_Configuration" doc:name="get_address">
+                <db:parameterized-query><![CDATA[select type, number, street, Unit, City, State, zipcode from address WHERE id = #[flowVars.uid];]]></db:parameterized-query>
+            </db:select>
+        </scatter-gather>
+        <dw:transform-message doc:name="get_payload">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/json skipNullOn="everywhere"
+%var identification = payload[0]
+%var communication = payload[1]
+%var address = payload[2]
+---
+{
+	identification:identification[0],
+	address: address,
+	communication: communication
+}]]></dw:set-payload>
+        </dw:transform-message>
+    </flow>
+    <flow name="insertdata">
+        <dw:transform-message doc:name="payload">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+payload]]></dw:set-payload>
+        </dw:transform-message>
+        <dw:transform-message doc:name="Transform Message">
+            <dw:set-variable variableName="identification"><![CDATA[%dw 1.0
+%output application/java
+---
+{ 
+	"FirstName": payload.Identification.FirstName,
+    "LastName": payload.Identification.LastName,
+    "DOB": payload.Identification.DOB,
+    "Gender": payload.Identification.Gender ,
+    "Title": payload.Identification.Title,
+    "uniqueid": payload.Identification.FirstName ++ payload.Identification.LastName ++ payload.Identification.DOB
+}]]></dw:set-variable>
+            <dw:set-variable variableName="original"><![CDATA[%dw 1.0
+%output application/java
+---
+payload]]></dw:set-variable>
+        </dw:transform-message>
+        <scatter-gather doc:name="Scatter-Gather">
+            <db:insert config-ref="MySQL_Configuration" doc:name="insert_identification">
+                <db:parameterized-query><![CDATA[INSERT INTO identification(FirstName,LastName,DOB,Gender,Title,id)VALUES(#[flowVars.identification.FirstName],#[flowVars.identification.LastName],#[flowVars.identification.DOB],#[flowVars.identification.Gender],#[flowVars.identification.Title],#[flowVars.identification.uniqueid]);]]></db:parameterized-query>
+            </db:insert>
+            <choice doc:name="Address Check?">
+                <when expression="flowVars.original.Address!=null">
+                    <foreach collection="flowVars.original.Address" doc:name="For Each">
+                        <dw:transform-message doc:name="Transform Message">
+                            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	"type": payload.type,
+    "number": payload.number,
+    "street": payload.street,
+    "Unit": payload.Unit,
+    "city": payload.City,
+	"State": payload.State,
+	"zipcode": payload.zipcode
+}]]></dw:set-payload>
+                        </dw:transform-message>
+                        <db:insert config-ref="MySQL_Configuration" doc:name="insert_address">
+                            <db:parameterized-query><![CDATA[INSERT INTO address(type,number,street,Unit,City,State,zipcode,id)VALUES(#[payload.type],#[payload.number],#[payload.street],#[payload.Unit],#[payload.city],#[payload.State],#[payload.zipcode],#[flowVars.identification.uniqueid]);]]></db:parameterized-query>
+                        </db:insert>
+                    </foreach>
+                </when>
+                <otherwise>
+                    <logger message="No Address records" level="INFO" doc:name="No address"/>
+                </otherwise>
+            </choice>
+            <choice doc:name="Communication Check?">
+                <when expression="flowVars.original.Communication!=null">
+                    <foreach collection="flowVars.original.Communication" doc:name="For Each">
+                        <dw:transform-message doc:name="Transform Message">
+                            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	"type": payload.type,
+	"value": payload.value,
+	"preferred": payload.preferred
+}]]></dw:set-payload>
+                        </dw:transform-message>
+                        <db:insert config-ref="MySQL_Configuration" doc:name="insert_communication">
+                            <db:parameterized-query><![CDATA[INSERT INTO communication(type,value,preferred,id)VALUES(#[payload.type],
+#[payload.value],#[payload.preferred],#[flowVars.identification.uniqueid]);]]></db:parameterized-query>
+                        </db:insert>
+                    </foreach>
+                </when>
+                <otherwise>
+                    <logger message="No Communication record" level="INFO" doc:name="No communication record"/>
+                </otherwise>
+            </choice>
+        </scatter-gather>
+    </flow>
+    <flow name="updatedata">
+        <dw:transform-message doc:name="payload">
+            <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+payload]]></dw:set-payload>
+        </dw:transform-message>
+        <dw:transform-message doc:name="flowvars_original">
+            <dw:set-variable variableName="identification"><![CDATA[
+%dw 1.0
+%output application/java
+---
+{ 
+	"FirstName": payload.Identification.FirstName,
+    "LastName": payload.Identification.LastName,
+    "DOB": payload.Identification.DOB,
+    "Gender": payload.Identification.Gender ,
+    "Title": payload.Identification.Title,
+    "uniqueid": payload.Identification.FirstName ++ payload.Identification.LastName ++ payload.Identification.DOB
+}]]></dw:set-variable>
+            <dw:set-variable variableName="original"><![CDATA[%dw 1.0
+%output application/java
+---
+payload]]></dw:set-variable>
+        </dw:transform-message>
+        <flow-ref name="uniqueIdentifier" doc:name="UniqueId"/>
+        <scatter-gather doc:name="Scatter-Gather">
+            <db:update config-ref="MySQL_Configuration" doc:name="update_identification">
+                <db:parameterized-query><![CDATA[UPDATE identification
+SET FirstName = #[flowVars.identification.FirstName],
+LastName = #[flowVars.identification.LastName],
+DOB = #[flowVars.identification.DOB],
+Gender = #[flowVars.identification.Gender],
+Title = #[flowVars.identification.Title],
+id = #[flowVars.identification.uniqueid]
+WHERE id = #[flowVars.uid];]]></db:parameterized-query>
+            </db:update>
+
+            <foreach doc:name="For Each" collection="flowVars.original.Address">
+                <dw:transform-message doc:name="address payload">
+                    <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	"type": payload.type,
+    "number": payload.number,
+    "street": payload.street,
+    "Unit": payload.Unit,
+    "city": payload.City,
+	"State": payload.State,
+	"zipcode": payload.zipcode
+}]]></dw:set-payload>
+                </dw:transform-message>
+                <db:update config-ref="MySQL_Configuration" doc:name="update_address">
+                    <db:parameterized-query><![CDATA[UPDATE address
+SET type = #[payload.type],
+number = #[payload.number],
+street = #[payload.street],
+Unit = #[payload.Unit],
+City = #[payload.city],
+State = #[payload.State],
+zipcode = #[payload.zipcode],
+id = #[flowVars.identification.uniqueid]
+WHERE id = #[flowVars.uid];]]></db:parameterized-query>
+                </db:update>
+            </foreach>
+            <foreach doc:name="For Each" collection="flowVars.original.Communication">
+                <dw:transform-message doc:name="commmunication payload">
+                    <dw:set-payload><![CDATA[%dw 1.0
+%output application/java
+---
+{
+	"type": payload.type,
+	"value": payload.value,
+	"preferred": payload.preferred
+}]]></dw:set-payload>
+                </dw:transform-message>
+                <db:update config-ref="MySQL_Configuration" doc:name="update_communication">
+                    <db:parameterized-query><![CDATA[UPDATE communication
+SET type = #[payload.type],
+value = #[payload.value],
+preferred = #[payload.preferred],
+id = #[flowVars.identification.uniqueid]
+WHERE id = #[flowVars.uid];]]></db:parameterized-query>
+                </db:update>
+            </foreach>
+        </scatter-gather>
+    </flow>
+    <flow name="deletedata">
+        <flow-ref name="uniqueIdentifier" doc:name="UniqueId"/>
+        <scatter-gather doc:name="Scatter-Gather">
+            <db:delete config-ref="MySQL_Configuration" doc:name="delete_identification">
+                <db:parameterized-query><![CDATA[DELETE FROM identification
+WHERE id = #[flowVars.uid];]]></db:parameterized-query>
+            </db:delete>
+            <db:delete config-ref="MySQL_Configuration" doc:name="delete_address">
+                <db:parameterized-query><![CDATA[DELETE FROM address
+WHERE id = #[flowVars.uid];]]></db:parameterized-query>
+            </db:delete>
+            <db:delete config-ref="MySQL_Configuration" doc:name="delete_communication">
+                <db:parameterized-query><![CDATA[DELETE FROM communication
+WHERE id = #[flowVars.uid];]]></db:parameterized-query>
+            </db:delete>
+        </scatter-gather>
+    </flow>
+</mule>

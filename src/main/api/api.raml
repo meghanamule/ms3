@@ -1,0 +1,66 @@
+#%RAML 1.0
+title: database
+baseUri: http://classicmodels.com
+version: v1
+protocols: [HTTP, HTTPS]
+mediaType: application/json
+
+/contract:
+  get:
+    queryParameters:
+      firstName:
+        required: true
+        type: string
+      lastName:
+        required: true
+        type: string
+      dob:
+        required: true
+        type: string
+    responses:
+      200:
+        body:
+          application/json:
+  post:
+    body:
+      application/json:
+    responses:
+      200:
+        body:
+          application/json:
+  put:
+    queryParameters:
+      firstName:
+        required: true
+        type: string
+      lastName:
+        required: true
+        type: string
+      dob:
+        required: true
+        type: string
+    body:
+      application/json:
+    responses:
+      200:
+        body:
+          application/json:
+  delete:
+    queryParameters:
+      firstName:
+        required: true
+        type: string
+      lastName:
+        required: true
+        type: string
+      dob:
+        required: true
+        type: string
+    responses:
+      200:
+        body:
+          application/json:
+    
+    
+              
+          
