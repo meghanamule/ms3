@@ -1,0 +1,164 @@
+{
+	"info": {
+		"_postman_id": "ac551fc8-53b2-4f87-8cb2-875e9a798be5",
+		"name": "MS3_coding",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "insertdata",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"Identification\": {\n        \"FirstName\": \"Mcd\",\n        \"LastName\": \"Mnm\",\n        \"DOB\": \"06/21/1980\",\n        \"Gender\": \"M\",\n        \"Title\": \"Manager\"\n    },\n    \"Address\": [\n        {\n            \"type\": \"home\",\n            \"number\": 1234,\n            \"street\": \"blah blah St\",\n            \"Unit\": \"1 a\",\n            \"City\": \"Somewhere\",\n            \"State\": \"WV\",\n            \"zipcode\": \"12345\"\n        }\n    ],\n    \"Communication\": [\n        {\n            \"type\": \"email\",\n            \"value\": \"bfe@sample.com\",\n            \"preferred\": \"true\"\n        },\n        {\n            \"type\": \"cell\",\n            \"value\": \"304-555-8282\"\n        }\n    ]\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8081/api/contract",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"api",
+						"contract"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "getdata",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8081/api/contract?firstName=Bob&lastName=Frederick&dob=06/21/1980",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"api",
+						"contract"
+					],
+					"query": [
+						{
+							"key": "firstName",
+							"value": "Bob"
+						},
+						{
+							"key": "lastName",
+							"value": "Frederick"
+						},
+						{
+							"key": "dob",
+							"value": "06/21/1980"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "deletedata",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8081/api/contract?firstName=Meg&lastName=Frederick&dob=06/21/1980",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"api",
+						"contract"
+					],
+					"query": [
+						{
+							"key": "firstName",
+							"value": "Meg"
+						},
+						{
+							"key": "lastName",
+							"value": "Frederick"
+						},
+						{
+							"key": "dob",
+							"value": "06/21/1980"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "updatedata",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"Identification\": {\n        \"FirstName\": \"Meg\",\n        \"LastName\": \"Frederick\",\n        \"DOB\": \"06/21/1980\",\n        \"Gender\": \"M\",\n        \"Title\": \"Manager\"\n    },\n    \"Address\": [\n        {\n            \"type \": \"home\",\n            \"number\": 12345,\n            \"street\": \"blah blah St\",\n            \"Unit\": \"1 a\",\n            \"City\": \"Somewhere\",\n            \"State\": \"WV\",\n            \"zipcode\": \"12345\"\n        }\n    ],\n    \"Communication\": [\n        {\n            \"type\": \"email\",\n            \"value\": \"bfe@sample.com\",\n            \"preferred\": \"true\"\n        },\n        {\n            \"type\": \"cell\",\n            \"value\": \"304-555-8282\"\n        }\n    ]\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:8081/api/contract?firstName=Mcd&lastName=Mnm&dob=06/21/1980",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"api",
+						"contract"
+					],
+					"query": [
+						{
+							"key": "firstName",
+							"value": "Mcd"
+						},
+						{
+							"key": "lastName",
+							"value": "Mnm"
+						},
+						{
+							"key": "dob",
+							"value": "06/21/1980"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"protocolProfileBehavior": {}
+}
