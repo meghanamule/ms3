@@ -4,7 +4,7 @@ The contents of this repo include the coding challenge.
 To complete this challange I have used the following. 
 
 1. Anypoint Studio (6.6.1). 
-2. Mule Runtime Version 3.9.2
+2. Mule Runtime Version 3.9.3
 3. MySql Workbench
 4. Postman
 
